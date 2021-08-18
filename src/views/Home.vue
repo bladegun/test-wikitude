@@ -79,6 +79,7 @@
 import { defineComponent } from 'vue';
 import { isPlatform, useBackButton, IonContent, IonHeader, IonList, IonPage, IonTitle, IonToolbar, IonItem, IonLabel } from '@ionic/vue';
 import { App } from '@capacitor/app';
+import { Geolocation, PositionOptions, Position } from '@capacitor/geolocation';
 import { Wikitude, SDKBuildInformation, StartupConfiguration } from '@ionic-native/wikitude';
 
 export default defineComponent({
@@ -150,24 +151,26 @@ export default defineComponent({
       }
     },
 
-    getLocation() {
-      const options: PositionOptions = {
-        enableHighAccuracy: false,
-        maximumAge: 0,
-        timeout: 30 * 1000,
-      };
+    async getLocation() {
+      try {
+        const options: PositionOptions = {
+          enableHighAccuracy: false,
+          maximumAge: 0,
+          timeout: 30 * 1000,
+        };
 
-      navigator.geolocation.getCurrentPosition(position => this.getCurrentPositionSuccess(position), error => this.getCurrentPositionError(error), options);
+        const position = await Geolocation.getCurrentPosition(options);
+        this.getCurrentPositionSuccess(position);
+      }
+      catch (error) {
+        alert(error.message);
+      }
     },
 
-    getCurrentPositionSuccess(position: GeolocationPosition) {
+    getCurrentPositionSuccess(position: Position) {
       const coords = position.coords;
       Wikitude.setLocation(coords.latitude, coords.longitude, coords.altitude || 0, coords.accuracy);
       this.hasLocation = true;
-    },
-
-    getCurrentPositionError(error: GeolocationPositionError) {
-      alert(error.message);
     },
 
     openAppSettings() {
