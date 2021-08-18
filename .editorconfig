@@ -1,0 +1,5 @@
+root = true
+
+[*.{ts,vue,html,js}]
+trim_trailing_whitespace = true
+indent_style = space
