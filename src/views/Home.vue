@@ -58,17 +58,42 @@
           <ion-label>Show Alert</ion-label>
         </ion-item>
 
-        <ion-item v-if="hasLocation" button detail @click="loadARchitectWorldFront">
-          <ion-label>Load ARchitect World (front)</ion-label>
-        </ion-item>
+        <template v-if="hasLocation">
+          <ion-item>
+            <ion-label>Latitude:</ion-label>
+            <div slot="end">{{ latitude }}</div>
+          </ion-item>
 
-        <ion-item v-if="hasLocation" button detail @click="loadARchitectWorldBack">
-          <ion-label>Load ARchitect World (back)</ion-label>
-        </ion-item>
+          <ion-item>
+            <ion-label>Longitude:</ion-label>
+            <div slot="end">{{ longitude }}</div>
+          </ion-item>
 
-        <ion-item v-else>
-          <ion-label>Getting current location...</ion-label>
-        </ion-item>
+          <ion-item>
+            <ion-label>Altitude:</ion-label>
+            <div slot="end">{{ altitude }}</div>
+          </ion-item>
+
+          <ion-item>
+            <ion-label>Accuracy:</ion-label>
+            <div slot="end">{{ accuracy }}</div>
+          </ion-item>
+
+          <ion-item button detail @click="loadARchitectWorldFront">
+            <ion-label>Load ARchitect World (front)</ion-label>
+          </ion-item>
+
+          <ion-item button detail @click="loadARchitectWorldBack">
+            <ion-label>Load ARchitect World (back)</ion-label>
+          </ion-item>
+        </template>
+
+        <template v-else>
+          <ion-item button :disabled="gettingLocation" @click="getLocation">
+            <ion-label v-if="gettingLocation">Getting Current Location...</ion-label>
+            <ion-label v-else>Get Current Location</ion-label>
+          </ion-item>
+        </template>
       </ion-list>
     </ion-content>
   </ion-page>
@@ -80,6 +105,7 @@ import { defineComponent } from 'vue';
 import { isPlatform, useBackButton, IonContent, IonHeader, IonList, IonPage, IonTitle, IonToolbar, IonItem, IonLabel } from '@ionic/vue';
 import { App } from '@capacitor/app';
 import { Geolocation, PositionOptions, Position } from '@capacitor/geolocation';
+import { Toast } from '@capacitor/toast';
 import { Wikitude, SDKBuildInformation, StartupConfiguration } from '@ionic-native/wikitude';
 
 export default defineComponent({
@@ -103,10 +129,15 @@ export default defineComponent({
       supported: '',
       access: '',
       hasLocation: false,
+      gettingLocation: false,
+      latitude: 0,
+      longitude: 0,
+      altitude: 0,
+      accuracy: 0,
     }
   },
 
-  created() {
+  mounted() {
     this.init();
   },
 
@@ -130,47 +161,87 @@ export default defineComponent({
         console.debug(Wikitude.CameraFocusRangeNear);
         console.debug(Wikitude.CameraFocusRangeFar);
 
+        // Show infos.
         this.version = await Wikitude.getSDKVersion();
 
-        const str = await Wikitude.getSDKBuildInformation();
-        const info = JSON.parse(str) as SDKBuildInformation;
+        const info = JSON.parse(await Wikitude.getSDKBuildInformation()) as SDKBuildInformation;
         this.buildConfiguration = info.buildConfiguration;
         this.buildDate = info.buildDate;
         this.buildNumber = info.buildNumber;
 
-        await Wikitude.isDeviceSupported([Wikitude.FeatureGeo]);
+        // Features.
+        const features = [Wikitude.FeatureGeo];
+
+        await Wikitude.isDeviceSupported(features);
         this.supported = 'Yes';
 
-        await Wikitude.requestAccess([Wikitude.FeatureGeo]);
+        await Wikitude.requestAccess(features);
         this.access = 'Granted';
 
-        this.getLocation();
+        // Listens for objects from AR.
+        Wikitude.setJSONObjectReceivedCallback((obj) => {
+          console.debug(obj);
+        });
+
+        if (isPlatform('hybrid')) {
+          if (isPlatform('android')) {
+            // Detect back button.
+            Wikitude.setBackButtonCallback(() => this.backButtonCallback());
+          }
+
+          if (isPlatform('ios')) {
+            // Listens for error from AR.
+            Wikitude.setErrorHandler((err) => console.error(err));
+
+            // Listens for events for sensor calibration.
+            Wikitude.setDeviceSensorsNeedCalibrationHandler(() => console.debug('iOS device sensors need calibration.'));
+            Wikitude.setDeviceSensorsFinishedCalibrationHandler(() => console.debug('iOS device sensors finished calibration.'));
+          }
+        }
       }
-      catch (error) {
+      catch (error: any) {
         this.initError = error;
       }
     },
 
+    backButtonCallback() {
+      Toast.show({
+        text: 'Came back from AR',
+        duration: 'long',
+      });
+    },
+
     async getLocation() {
       try {
+        this.gettingLocation = true;
+
         const options: PositionOptions = {
           enableHighAccuracy: false,
-          maximumAge: 0,
           timeout: 30 * 1000,
+          maximumAge: 60 * 60 * 1000,
         };
 
         const position = await Geolocation.getCurrentPosition(options);
         this.getCurrentPositionSuccess(position);
       }
-      catch (error) {
+      catch (error: any) {
         alert(error.message);
+      }
+      finally {
+        this.gettingLocation = false;
       }
     },
 
     getCurrentPositionSuccess(position: Position) {
       const coords = position.coords;
+
       Wikitude.setLocation(coords.latitude, coords.longitude, coords.altitude || 0, coords.accuracy);
+
       this.hasLocation = true;
+      this.latitude = coords.latitude;
+      this.longitude = coords.longitude;
+      this.altitude = coords.altitude || 0;
+      this.accuracy = coords.accuracy;
     },
 
     openAppSettings() {
@@ -190,6 +261,11 @@ export default defineComponent({
         };
 
         Wikitude.loadARchitectWorld(url, [Wikitude.FeatureGeo], config);
+
+        setTimeout(() => {
+          Wikitude.captureScreen(false, null);
+          console.debug('Front camere captured. Look for it in Photos Gallery.');
+        }, 3000);
       }
       catch (error) {
         console.error(error);
@@ -205,6 +281,15 @@ export default defineComponent({
         };
 
         Wikitude.loadARchitectWorld(url, [Wikitude.FeatureGeo], config);
+
+        setTimeout(() => {
+          Wikitude.captureScreen(false, null);
+          console.debug('Back camere captured. Look for it in Photos Gallery.');
+        }, 3000);
+
+        setTimeout(() => {
+          Wikitude.callJavaScript('world.greet("Hello everyone!")');
+        }, 5000);
       }
       catch (error) {
         console.error(error);
