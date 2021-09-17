@@ -75,6 +75,8 @@ const World = {
 
     async reloadFeatures() {
       if (this.locationAvailable) {
+        const radius = 20 * 1000;
+
         // Prepare request.
         const data = {
           name: 'internet-centre',
@@ -82,7 +84,7 @@ const World = {
             type: 'Point',
             coordinates: [this.longitude, this.latitude],
           },
-          radius: 30 * 1000,
+          radius,
           page: 0,
           pageSize: 100,
         };
@@ -104,7 +106,7 @@ const World = {
           for (const feature of result.features.features)
             this.addFeature(feature);
 
-          AR.radar.maxDistance = 30 * 1000;
+          AR.radar.maxDistance = radius;
         }
         catch (error) {
           logError(error);
