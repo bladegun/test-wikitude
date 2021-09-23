@@ -6,5 +6,17 @@
     <param name="ios-package" value="WTWikitudePlugin"/>
   </feature>
 
+  <feature name="ActionSheet">
+    <param name="ios-package" value="ActionSheet"/>
+  </feature>
+
+  <feature name="Notification">
+    <param name="ios-package" value="CDVNotification"/>
+  </feature>
+
+  <feature name="LaunchNavigator">
+    <param name="ios-package" value="LaunchNavigatorPlugin"/>
+  </feature>
+
   
 </widget>

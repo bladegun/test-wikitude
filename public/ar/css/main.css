@@ -1,0 +1,62 @@
+[v-cloak] {
+  display: none;
+}
+
+html, body, #app {
+  height: 100%;
+  overflow: hidden
+}
+
+body {
+  background-color: initial;
+}
+
+#app {
+  pointer-events: none;
+}
+
+.pe {
+  pointer-events: auto;
+}
+
+.text-pre-wrap {
+  white-space: pre-line;
+}
+
+.buttons {
+  position: absolute;
+  top: env(safe-area-inset-top);
+  left: env(safe-area-inset-left);
+  background-color: #222;
+  opacity: .8;
+}
+
+.back-button,
+.radius-button {
+  cursor: pointer;
+  color: #ccc;
+}
+
+.radar {
+  position: absolute;
+  top: env(safe-area-inset-top);
+  right: env(safe-area-inset-right);
+  width: 120px;
+  height: 120px;
+}
+
+.detail-panel {
+  position: absolute;
+  top: 60px;
+  bottom: 10px;
+  left: 10px;
+  width: 250px;
+}
+
+@media (max-width: 480px) {
+  .detail-panel {
+    top: auto;
+    width: auto;
+    right: 10px;
+  }
+}

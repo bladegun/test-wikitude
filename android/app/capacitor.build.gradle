@@ -14,7 +14,7 @@ dependencies {
     implementation project(':capacitor-keyboard')
     implementation project(':capacitor-status-bar')
     implementation project(':capacitor-toast')
-
+    implementation "com.squareup.okhttp3:okhttp:3.12.0"
 }
 apply from: "../../node_modules/com.wikitude.phonegap.wikitudeplugin/src/android/build-extras.gradle"
 

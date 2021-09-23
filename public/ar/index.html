@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+  <meta charset="utf-8" />
+  <title>JENDELA AR</title>
+
+  <meta name="color-scheme" content="light dark" />
+  <meta
+    name="viewport"
+    content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="msapplication-tap-highlight" content="no" />
+
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/all.min.css">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div id="app" v-cloak>
+
+    <!-- Top buttons -->
+    <div class="buttons pe d-flex">
+      <span class="back-button px-2 py-3" @click="close">
+        <i class="fas fa-long-arrow-alt-left fa-fw"></i>
+      </span>
+      <span class="radius-button p-3 border-left" @click="showRadiusDialog">
+        <i class="far fa-dot-circle fa-fw"></i>
+      </span>
+    </div>
+
+    <!-- Radar -->
+    <div class="radar" ref="radar"></div>
+
+    <div class="detail-panel pe card" v-if="detailPanelVisible">
+      <div class="card-body">
+        <button type="button" class="close" aria-label="Close" @click="closeDetailPanel">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h5 class="card-title">{{ detailMarkerTitle }}</h5>
+        <p class="card-text">{{ $t('poiType') }}</p>
+        <a href="#" class="card-link" @click.prevent="showPoiDetail"><i class="fas fa-info-circle fa-fw"></i> {{ $t('poiDetailLink') }}</a>
+        <a href="#" class="card-link" @click.prevent="navigateToPoi"><i class="fas fa-directions fa-fw"></i> {{ $t('poiNavigateLink') }}</a>
+      </div>
+    </div>
+
+    <!-- Radius dialog -->
+    <div id="radius-dialog" class="modal pe" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <v-form :initial-values="radiusValues" @submit="onRadiusDialogSubmit">
+            <div class="modal-header">
+              <h5 class="modal-title">{{ $t('radiusDialogTitle') }}</h5>
+              <button type="button" class="close" data-dismiss="modal">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="radius-input">{{ $t('radiusLabel') }}<span class="text-danger"> *</span></label>
+                <v-field id="radius-input" name="radius" type="number" class="form-control" maxlength="2" :rules="isRadiusValid"></v-field>
+                <small class="form-text text-muted">{{ $t('radiusHint') }}</small>
+                <error-message name="radius" class="text-danger"></error-message>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">{{ $t('submitButton') }}</button>
+            </div>
+          </v-form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://www.wikitude.com/libs/architect.js"></script>
+  <script src="js/ade.js"></script>
+  <script src="js/jquery.slim.min.js"></script>
+  <script src="js/bootstrap.bundle.min.js"></script>
+  <script src="js/vue.global.js"></script>
+  <script src="js/vue-i18n.global.js"></script>
+  <script src="js/vee-validate.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

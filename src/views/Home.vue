@@ -58,12 +58,21 @@
           <ion-label>Show Alert</ion-label>
         </ion-item>
 
-        <ion-item button detail @click="loadARchitectWorldFront">
-          <ion-label>Load ARchitect World (front)</ion-label>
+        <ion-item>
+          <ion-label>Remote URL:</ion-label>
+          <ion-input v-model="remoteUrl"></ion-input>
         </ion-item>
 
-        <ion-item button detail @click="loadARchitectWorldBack">
-          <ion-label>Load ARchitect World (back)</ion-label>
+        <!-- <ion-item button detail @click="loadARchitectWorldFront">
+          <ion-label>Load ARchitect World (front)</ion-label>
+        </ion-item> -->
+
+        <ion-item button detail @click="loadARchitectWorldUrlBack">
+          <ion-label>Load AR from Remote URL</ion-label>
+        </ion-item>
+
+        <ion-item button detail @click="loadARchitectWorldFile">
+          <ion-label>Load AR from Assets</ion-label>
         </ion-item>
       </ion-list>
     </ion-content>
@@ -73,19 +82,24 @@
 <script lang="ts">
 
 import { defineComponent } from 'vue';
-import { isPlatform, useBackButton, IonContent, IonHeader, IonList, IonPage, IonTitle, IonToolbar, IonItem, IonLabel } from '@ionic/vue';
+import { isPlatform, useBackButton, IonContent, IonHeader, IonList, IonPage, IonTitle, IonToolbar, IonItem, IonLabel, IonInput } from '@ionic/vue';
 import { App } from '@capacitor/app';
 import { Toast } from '@capacitor/toast';
 import { Wikitude, SDKBuildInformation, StartupConfiguration } from '@ionic-native/wikitude';
+import { LaunchNavigator } from '@ionic-native/launch-navigator';
+import { ActionSheet } from '@ionic-native/action-sheet';
 
 interface ARMessage {
-  action: 'close';
+  action: 'boot' | 'show-poi' | 'navigate' | 'close';
+  id: number | string;
+  latitude: number;
+  longitude: number;
 }
 
 export default defineComponent({
   name: 'Home',
 
-  components: { IonContent, IonHeader, IonList, IonPage, IonTitle, IonToolbar, IonItem, IonLabel },
+  components: { IonContent, IonHeader, IonList, IonPage, IonTitle, IonToolbar, IonItem, IonLabel, IonInput },
 
   setup() {
     if (isPlatform('hybrid') && isPlatform('android')) {
@@ -102,6 +116,7 @@ export default defineComponent({
       buildNumber: '',
       supported: '',
       access: '',
+      remoteUrl: 'http://192.168.50.16:8080/ar/',
     }
   },
 
@@ -187,17 +202,32 @@ export default defineComponent({
       Wikitude.showAlert('Alert from Wikitude.');
     },
 
-    loadARchitectWorldFront() {
-      this.loadARchitectWorld('front');
+    loadARchitectWorldUrlFront() {
+      this.loadARchitectWorldUrl('front');
     },
 
-    loadARchitectWorldBack() {
-      this.loadARchitectWorld('back');
+    loadARchitectWorldUrlBack() {
+      this.loadARchitectWorldUrl('back');
     },
 
-    async loadARchitectWorld(cameraPosition: 'front' | 'back') {
+    async loadARchitectWorldUrl(cameraPosition: 'front' | 'back') {
       try {
-        const url = 'public/poi/index.html';
+        //const url = 'public/ar/index.html';
+        const url = this.remoteUrl;
+        const config: StartupConfiguration = {
+          camera_position: cameraPosition, // eslint-disable-line
+        };
+
+        await Wikitude.loadARchitectWorld(url, [Wikitude.FeatureGeo], config);
+      }
+      catch (error) {
+        console.error(error);
+      }
+    },
+
+    async loadARchitectWorldFile(cameraPosition: 'front' | 'back' = 'back') {
+      try {
+        const url = 'public/ar/index.html';
         const config: StartupConfiguration = {
           camera_position: cameraPosition, // eslint-disable-line
         };
@@ -211,6 +241,40 @@ export default defineComponent({
 
     onARMessageReceived(message: ARMessage) {
       switch (message.action) {
+        case 'boot': {
+          const locale = 'ms';
+          const mapApiUrl = 'http://jendelabeta.naditeknologi.com.my/api/Map/';
+
+          const args = [
+            JSON.stringify(locale),
+            JSON.stringify(mapApiUrl),
+          ];
+
+          Wikitude.callJavaScript(`runApp(${args[0]},${args[1]})`);
+          break;
+        }
+
+        case 'show-poi': {
+          const poiId = message.id;
+          setTimeout(() => {
+            alert(`Navigate to POI with ID: ${poiId}`);
+          }, 1000);
+
+          Wikitude.close();
+          break;
+        }
+
+        case 'navigate': {
+          LaunchNavigator.navigate([message.latitude, message.longitude], {
+            enableGeocoding: false,
+            rememberChoice: {
+              enabled: true,
+            },
+            androidTheme: ActionSheet.ANDROID_THEMES.THEME_DEVICE_DEFAULT_LIGHT,
+          } as any);
+          break;
+        }
+
         case 'close':
           Wikitude.close();
           break;
