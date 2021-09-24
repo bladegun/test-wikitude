@@ -90,7 +90,7 @@ import { LaunchNavigator } from '@ionic-native/launch-navigator';
 import { ActionSheet } from '@ionic-native/action-sheet';
 
 interface ARMessage {
-  action: 'boot' | 'show-poi' | 'navigate' | 'close';
+  action: 'boot' | 'show-poi' | 'navigate-to' | 'close';
   id: number | string;
   latitude: number;
   longitude: number;
@@ -255,23 +255,30 @@ export default defineComponent({
         }
 
         case 'show-poi': {
-          const poiId = message.id;
-          setTimeout(() => {
-            alert(`Navigate to POI with ID: ${poiId}`);
-          }, 1000);
-
           Wikitude.close();
+
+          setTimeout(() => {
+            alert(`Navigate to POI with ID: ${message.id}`);
+          }, 100);
           break;
         }
 
-        case 'navigate': {
-          LaunchNavigator.navigate([message.latitude, message.longitude], {
-            enableGeocoding: false,
-            rememberChoice: {
-              enabled: true,
-            },
-            androidTheme: ActionSheet.ANDROID_THEMES.THEME_DEVICE_DEFAULT_LIGHT,
-          } as any);
+        case 'navigate-to': {
+          if (isPlatform('hybrid') && isPlatform('ios')) {
+            Wikitude.close();
+          }
+
+          setTimeout(() => {
+            const options = {
+              enableGeocoding: false,
+              rememberChoice: {
+                enabled: false,
+              },
+              androidTheme: ActionSheet.ANDROID_THEMES.THEME_DEVICE_DEFAULT_LIGHT,
+            };
+            LaunchNavigator.navigate([message.latitude, message.longitude], options)
+              .catch(console.error);
+          }, 100);
           break;
         }
 
