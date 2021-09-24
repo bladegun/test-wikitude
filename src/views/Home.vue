@@ -250,7 +250,7 @@ export default defineComponent({
             JSON.stringify(mapApiUrl),
           ];
 
-          Wikitude.callJavaScript(`runApp(${args[0]},${args[1]})`);
+          Wikitude.callJavaScript(`arRunApp(${args[0]},${args[1]})`);
           break;
         }
 

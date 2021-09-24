@@ -2,15 +2,15 @@
  * Common functions
  ********************************************************************************/
 
-function sendMessage(message) {
+function arSendMessage(message) {
   AR.platform.sendJSONObject(message);
 }
 
-function logError(error) {
+function arLogError(error) {
   AR.logger.error(error);
 }
 
-async function loadFeatures(mapApiUrl, data) {
+async function arLoadFeatures(mapApiUrl, data) {
   const request = {
     method: 'POST',
     cache: 'no-cache',
@@ -30,14 +30,14 @@ async function loadFeatures(mapApiUrl, data) {
 }
 
 /********************************************************************************
- * World class
+ * ArWorld class
  ********************************************************************************/
 
-class World {
+class ArWorld {
   constructor() {
-    this.idleMarkerResource         = new AR.ImageResource("assets/marker_idle.png",     { onError: logError });
-    this.selectedMarkerResource     = new AR.ImageResource("assets/marker_selected.png", { onError: logError });
-    this.directionIndicatorResource = new AR.ImageResource("assets/indi.png",            { onError: logError });
+    this.idleMarkerResource         = new AR.ImageResource("assets/marker_idle.png",     { onError: arLogError });
+    this.selectedMarkerResource     = new AR.ImageResource("assets/marker_selected.png", { onError: arLogError });
+    this.directionIndicatorResource = new AR.ImageResource("assets/indi.png",            { onError: arLogError });
 
     this.radarDrawable = new AR.Circle(0.05, {
       horizontalAnchor: AR.CONST.HORIZONTAL_ANCHOR.CENTER,
@@ -56,7 +56,7 @@ class World {
 
     for (const feature of features) {
       if (currentIDs.indexOf(feature.properties.id) === -1) {
-        const marker = new Marker(feature);
+        const marker = new ArMarker(feature);
         this.markers.push(marker);
 
         AR.logger.debug(`Added marker ${marker.id}.`);
@@ -93,7 +93,7 @@ class World {
 }
 
 /********************************************************************************
- * Marker class
+ * ArMarker class
  ********************************************************************************/
 
 const CHANGE_ANIMATION_DURATION = 500;
@@ -105,7 +105,7 @@ const MAX_OPACITY = 1.0;
 const MIN_SCALE = 1.0;
 const MAX_SCALE = 1.2;
 
-class Marker {
+class ArMarker {
   constructor(feature) {
     this.resources = [];
 
@@ -313,7 +313,7 @@ class Marker {
  * Vue app
  ********************************************************************************/
 
-const App = {
+const ArApp = {
   components: {
     VForm: VeeValidate.Form,
     VField: VeeValidate.Field,
@@ -376,7 +376,7 @@ const App = {
     AR.logger.setHTMLLoggingEnabled(true);
 
     this.radius = 20;
-    window.world = new World();
+    window.world = new ArWorld();
 
     // Listens to location event.
     AR.context.onLocationChanged = this.onLocationChanged.bind(this);
@@ -422,13 +422,13 @@ const App = {
 
       try {
         this.reloading = true;
-        result = await loadFeatures(this.mapApiUrl, data);
+        result = await arLoadFeatures(this.mapApiUrl, data);
 
         if (result.error)
           throw new Error(result.error);
       }
       catch (error) {
-        logError(error);
+        arLogError(error);
         // Reload on next 5 seconds if an error occurred.
         this.setReload(5);
         return;
@@ -473,8 +473,8 @@ const App = {
 
       try {
         AR.radar.container = element;
-        AR.radar.background = new AR.ImageResource("assets/radar_bg.png", { onError: logError });
-        AR.radar.northIndicator.image = new AR.ImageResource("assets/radar_north.png", { onError: logError });
+        AR.radar.background = new AR.ImageResource("assets/radar_bg.png", { onError: arLogError });
+        AR.radar.northIndicator.image = new AR.ImageResource("assets/radar_north.png", { onError: arLogError });
         AR.radar.northIndicator.radius = 0.0;
         AR.radar.centerX = 0.5;
         AR.radar.centerY = 0.5;
@@ -484,7 +484,7 @@ const App = {
       catch (error) {
         // AR.radar throws error when running in desktop.
         // We catch all the desktop errors here.
-        logError(error);
+        arLogError(error);
       }
     },
 
@@ -505,7 +505,7 @@ const App = {
       const marker = world.getSelectedMarker();
 
       if (marker) {
-        sendMessage({
+        arSendMessage({
           action: 'show-poi',
           id: marker.id,
         });
@@ -518,7 +518,7 @@ const App = {
       if (marker) {
         const [longitude, latitude] = marker.feature.geometry.coordinates;
 
-        sendMessage({
+        arSendMessage({
           action: 'navigate-to',
           latitude,
           longitude,
@@ -557,28 +557,27 @@ const App = {
     },
 
     close() {
-      sendMessage({ action: 'close' });
+      arSendMessage({ action: 'close' });
     },
   },
 };
-
 
 /********************************************************************************
  * Startup
  ********************************************************************************/
 
-function runApp(locale, mapApiUrl) {
+function arRunApp(locale, mapApiUrl) {
   const i18n = VueI18n.createI18n({
     locale,
     fallbackLocale: 'en',
   });
 
-  const app = Vue.createApp(App).use(i18n);
+  const app = Vue.createApp(ArApp).use(i18n);
 
   app.config.globalProperties.mapApiUrl = mapApiUrl;
   app.mount('#app');
 }
 
 // Inform Ionic that this file has been loaded.
-// Ionic will call the runApp() function.
-sendMessage({ action: 'boot' });
+// Ionic will call the arRunApp() function.
+arSendMessage({ action: 'boot' });
